@@ -41,8 +41,8 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         )
         .formLogin(form -> form
             .loginPage("/login")
-            .permitAll())
-        .httpBasic(withDefaults());
+            .permitAll());
+       // .httpBasic(withDefaults());
   }
 
 
