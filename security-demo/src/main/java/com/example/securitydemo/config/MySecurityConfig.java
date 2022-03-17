@@ -1,15 +1,13 @@
 package com.example.securitydemo.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.authentication.www.DigestAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
 
 /**
  * @author: jiaming.sheng
@@ -18,20 +16,9 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @EnableWebSecurity
 public class MySecurityConfig extends WebSecurityConfigurerAdapter {
 
-  /**
-   * UserDetailsService 注入这个Bean来修改框架默认的用户管理方式生成的用户
-   * 用来自定义用户认证
-   * @return
-   */
-  @Bean
-  public UserDetailsService userDetailsService() {
-    // ensure the passwords are encoded properly
-    UserBuilder users = User.withDefaultPasswordEncoder();
-    InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-    manager.createUser(users.username("user").password("password").roles("USER").build());
-    manager.createUser(users.username("admin").password("password").roles("USER","ADMIN").build());
-    return manager;
-  }
+
+  @Autowired
+  UserDetailsService userDetailsService;
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
@@ -41,9 +28,23 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         )
         .formLogin(form -> form
             .loginPage("/login")
-            .permitAll());
-       // .httpBasic(withDefaults());
+            .permitAll())
+        .addFilter(digestFilter());
+//        .httpBasic(Customizer.withDefaults());
   }
 
+  DigestAuthenticationEntryPoint entryPoint() {
+    DigestAuthenticationEntryPoint result = new DigestAuthenticationEntryPoint();
+    result.setRealmName("My App Relam");
+    result.setKey("3028472b-da34-4501-bfd8-a355c42bdf92");
+    return result;
+  }
+
+  DigestAuthenticationFilter digestFilter() {
+    DigestAuthenticationFilter result = new DigestAuthenticationFilter();
+    result.setUserDetailsService(userDetailsService);
+    result.setAuthenticationEntryPoint(entryPoint());
+    return result;
+  }
 
 }
