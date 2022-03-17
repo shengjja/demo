@@ -6,6 +6,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.authentication.www.DigestAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.DigestAuthenticationFilter;
 
@@ -26,9 +28,12 @@ public class MySecurityConfig extends WebSecurityConfigurerAdapter {
         .authorizeRequests(authorize -> authorize
             .anyRequest().authenticated()
         )
-        .formLogin(form -> form
+        .formLogin(form ->form
             .loginPage("/login")
             .permitAll())
+        .rememberMe(r -> r
+            .userDetailsService(userDetailsService)
+            )
         .addFilter(digestFilter());
 //        .httpBasic(Customizer.withDefaults());
   }
