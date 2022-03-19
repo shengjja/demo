@@ -4,3 +4,6 @@ spring:
     url: jdbc:mysql://rm-bp1t2wk5zpp8163bzqo.mysql.rds.aliyuncs.com:33066/breeze?useUnicode=true&characterEncoding=UTF-8&allowMultiQueries=true&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
     username: shengjja
     password: shengjja*8
+
+  main:
+    lazy-initialization: true
