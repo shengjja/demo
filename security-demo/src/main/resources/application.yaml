@@ -7,3 +7,6 @@ spring:
 
   main:
     lazy-initialization: true
+
+
+

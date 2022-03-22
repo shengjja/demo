@@ -1,0 +1,128 @@
+# 事件监听：
+
+boot怎么发布事件？ApplicationEventPublisher
+
+```java
+import org.springframework.boot.availability.AvailabilityChangeEvent;
+import org.springframework.boot.availability.LivenessState;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MyLocalCacheVerifier {
+
+    private final ApplicationEventPublisher eventPublisher;
+
+    public MyLocalCacheVerifier(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
+
+    public void checkLocalCache() {
+        try {
+            // ...
+        }
+        catch (CacheCompletelyBrokenException ex) {
+            AvailabilityChangeEvent.publish(this.eventPublisher, ex, LivenessState.BROKEN);
+        }
+    }
+
+}
+
+
+```
+
+
+
+boot提供了容器的生命状态事件,在容器可以提供工作的时候或者不能时，会发ReadinessState，此机制可以结合例如k8s来使用，在状态改变时写文件来通知容器服务是否可用
+
+```java
+@Component
+public class MyReadinessStateExporter {
+
+    @EventListener
+    public void onStateChange(AvailabilityChangeEvent<ReadinessState> event) {
+        switch (event.getState()) {
+        case ACCEPTING_TRAFFIC:
+            // create file /tmp/healthy
+            break;
+        case REFUSING_TRAFFIC:
+            // remove file /tmp/healthy
+            break;
+        }
+    }
+
+}
+```
+
+但是，有一些事件是在spring容器启动前就有的，这时候要监听到，可以使用boot提供的spi机制
+
+If you want those listeners to be registered automatically, regardless of the way the application is created, you can add a `META-INF/spring.factories` file to your project and reference your listener(s) by using the `org.springframework.context.ApplicationListener` key, as shown in the following example:
+
+```
+org.springframework.context.ApplicationListener=com.example.project.MyListener
+```
+
+```java
+public class MyListener implements ApplicationListener {
+
+
+  @Override
+  public void onApplicationEvent(ApplicationEvent event) {
+    // 这里拿到所有的已发布的事件，具体的事件参考下面的清单，都是ApplicationEvent的子类
+    System.out.println(event.getClass().getName());
+  }
+}
+
+```
+
+1. An `ApplicationStartingEvent` is sent at the start of a run but before any processing, except for the registration of listeners and initializers.
+2. An `ApplicationEnvironmentPreparedEvent` is sent when the `Environment` to be used in the context is known but before the context is created.
+3. An `ApplicationContextInitializedEvent` is sent when the `ApplicationContext` is prepared and ApplicationContextInitializers have been called but before any bean definitions are loaded.
+4. An `ApplicationPreparedEvent` is sent just before the refresh is started but after bean definitions have been loaded.
+   1. The above list only includes `SpringApplicationEvent`s that are tied to a `SpringApplication`. In addition to these, the following events are also published after `ApplicationPreparedEvent` and before `ApplicationStartedEvent`:
+      - A `WebServerInitializedEvent` is sent after the `WebServer` is ready. `ServletWebServerInitializedEvent` and `ReactiveWebServerInitializedEvent` are the servlet and reactive variants respectively.
+      - A `ContextRefreshedEvent` is sent when an `ApplicationContext` is refreshed.
+5. An `ApplicationStartedEvent` is sent after the context has been refreshed but before any application and command-line runners have been called.
+6. An `AvailabilityChangeEvent` is sent right after with `LivenessState.CORRECT` to indicate that the application is considered as live.
+7. An `ApplicationReadyEvent` is sent after any [application and command-line runners](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.spring-application.command-line-runner) have been called.
+8. An `AvailabilityChangeEvent` is sent right after with `ReadinessState.ACCEPTING_TRAFFIC` to indicate that the application is ready to service requests.
+9. An `ApplicationFailedEvent` is sent if there is an exception on startup.
+
+
+
+# 代码里操作boot运行时的参数
+
+从SpringApplication.run(…)中使用的参数，可以注入一个ApplicationArguments的bean
+
+import java.util.List;
+
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MyBean {
+
+```java
+@Component
+public MyBean(ApplicationArguments args) {
+    boolean debug = args.containsOption("debug");
+    List<String> files = args.getNonOptionArgs();
+    if (debug) {
+        System.out.println(files);
+    }
+    // if run with "--debug logfile.txt" prints ["logfile.txt"]
+}
+```
+
+# 拿到配置文件里的属性
+
+spring暴露了一个接口，可以注入这个Bean里面有个getProperty()方法，拿到对应配置的值
+
+SpringApplicationAdminMXBean
+
+比如 获取端口号
+
+If you want to know on which HTTP port the application is running, get the property with a key of `local.server.port`.
+
+
+
