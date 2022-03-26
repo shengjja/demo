@@ -1,6 +1,8 @@
 package com.example.mvcdemo.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Map;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,8 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController {
 
-  @Autowired
-  HelloService helloService;
+  private HelloService helloService;
+
+  private JdbcTemplate jdbcTemplate;
+
+  public HelloController(HelloService helloService,
+      JdbcTemplate jdbcTemplate) {
+    this.helloService = helloService;
+    this.jdbcTemplate = jdbcTemplate;
+  }
 
   @GetMapping("/foo")
   public Resp foo(){
@@ -21,6 +30,13 @@ public class HelloController {
     resp.data="hahah";
     helloService.exceptionFoo();
     return resp;
+  }
+
+  @GetMapping("/jdbc")
+  public List<Map<String, Object>> jdbc(){
+    final List<Map<String, Object>> users = jdbcTemplate
+        .queryForList("select * from users");
+    return users;
   }
 
 

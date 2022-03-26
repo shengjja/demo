@@ -1,5 +1,6 @@
 package com.example.mvcdemo.config;
 
+import com.example.mvcdemo.MvcDemoApplication;
 import com.example.mvcdemo.controller.HelloController;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -11,11 +12,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 
-@ControllerAdvice(basePackageClasses = HelloController.class)
+//@ControllerAdvice(basePackageClasses = MvcDemoApplication.class)
 public class MyMvcConfig extends ResponseEntityExceptionHandler {
 
   @ResponseBody
-  @ExceptionHandler(MyException.class)
+  @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleControllerException(HttpServletRequest request, Throwable ex) {
     HttpStatus status = getStatus(request);
     final ResponseEntity<MyErrorBody> responseEntity =
